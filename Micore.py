@@ -127,7 +127,7 @@ if st.button("Analyze with Micore AI"):
 
     # Cashflow pre-check
     if monthly_cashflow < monthly_repayment*0.95:
-        st.error("NOT ELIGIBLE")
+        st.error("NOT ELIGIBLE ❌")
         st.warning("Loan repayment exceeds safe cashflow")
     else:
         expense_ratio=expenses/income
@@ -139,12 +139,13 @@ if st.button("Analyze with Micore AI"):
         score=model.predict_proba(input_data)[0][1]*100
 
         # ---------------------------
-        # Credit Result
+        # Credit Result with Balloons
         # ---------------------------
         with st.container():
             st.subheader("Credit Result")
             if prediction==1:
                 st.success("ELIGIBLE FOR CREDIT 🎉")
+                st.balloons()
             else:
                 st.error("NOT ELIGIBLE ❌")
             st.metric("Micore AI Risk Score", f"{score:.1f}/100")
