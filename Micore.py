@@ -47,7 +47,6 @@ def train_micore_model():
         'loans':[0,1,0,0,1,2,0,1,0,1],
         'target':[1,1,1,0,1,0,1,1,1,1]
     })
-    # Feature Engineering
     data['expense_ratio'] = data['expenses'] / data['income']
     X = data[['income','expenses','loans','expense_ratio']]
     y = data['target']
@@ -86,11 +85,33 @@ if user_type == "Banked (With Statement)":
                 else:
                     st.warning("No clear financial patterns found. Try manual entry.")
     else:
-        income = st.number_input("Monthly Income (₦):", min_value=0, step=1000)
-        expenses = st.number_input("Monthly Expenses (₦):", min_value=0, step=1000)
+        income = st.number_input(
+            "Monthly Income (₦):", 
+            min_value=10000, 
+            max_value=1000000, 
+            step=1000, 
+            value=25000
+        )
+        expenses = st.number_input(
+            "Monthly Expenses (₦):", 
+            min_value=0, 
+            step=1000, 
+            value=12000
+        )
 else:
-    income = st.number_input("Business Monthly Income (₦):", min_value=0, step=1000)
-    expenses = st.number_input("Business Monthly Expenses (₦):", min_value=0, step=1000)
+    income = st.number_input(
+        "Business Monthly Income (₦):", 
+        min_value=10000, 
+        max_value=1000000, 
+        step=1000, 
+        value=25000
+    )
+    expenses = st.number_input(
+        "Business Monthly Expenses (₦):", 
+        min_value=0, 
+        step=1000, 
+        value=12000
+    )
 
 loans = st.number_input("Existing Active Loans (Count):", min_value=0, step=1)
 duration = st.slider("Loan Repayment Duration (Months):", 1,12,3)
@@ -100,13 +121,12 @@ amount_needed = st.number_input("Amount of Loan Needed (₦):", min_value=1000, 
 if st.button("Analyze with Micore AI"):
     st.divider()
     
-    # Pre-check thresholds
     monthly_cashflow = income - expenses
     monthly_repayment = amount_needed / duration
     
-    if income > 100000:
+    if income > 1000000:
         st.error("### RESULT: NOT ELIGIBLE ❌")
-        st.warning("Micore is designed for small business owners earning below 100 000 Naira monthly.")
+        st.warning("Micore is designed for micro and small business owners.")
     elif income < 10000:
         st.error("### RESULT: NOT ELIGIBLE ❌")
         st.warning("Income is below the minimum threshold for micro-credit analysis.")
@@ -114,7 +134,6 @@ if st.button("Analyze with Micore AI"):
         st.error("### RESULT: NOT ELIGIBLE ❌")
         st.warning(f"Insufficient cash flow. Monthly repayment of ₦ {format_currency(monthly_repayment)} is not affordable.")
     else:
-        # AI Prediction
         expense_ratio = expenses / income
         input_data = pd.DataFrame([[income, expenses, loans, expense_ratio]],
                                   columns=['income','expenses','loans','expense_ratio'])
@@ -124,10 +143,10 @@ if st.button("Analyze with Micore AI"):
         if prediction == 1:
             st.balloons()
             st.success("### RESULT: ELIGIBLE FOR CREDIT 🎉")
-            st.info("AI Message: If your financial patterns remain consistent in the coming months, you are highly eligible.")
+            st.info("AI Message: If your financial patterns remain consistent, you are highly eligible.")
         else:
             st.error("### RESULT: NOT ELIGIBLE ❌")
-            st.info("AI Message: Based on current trends, improving your income-to-expense ratio may improve eligibility.")
+            st.info("AI Message: Improving your income-to-expense ratio may improve eligibility.")
         
         st.metric(label="Micore AI Risk Score", value=f"{score:.1f}/100")
     
