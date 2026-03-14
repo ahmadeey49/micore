@@ -31,6 +31,12 @@ st.title("📊 Micore AI")
 st.write("### AI-Powered Micro Credit Scoring for Small Businesses")
 
 # --------------------------------
+# SESSION STORAGE
+# --------------------------------
+if "history" not in st.session_state:
+    st.session_state.history=[]
+
+# --------------------------------
 # HELPER FUNCTIONS
 # --------------------------------
 def format_currency(amount):
@@ -56,13 +62,17 @@ def train_model():
         "duration":[3,6,6,2,6,3,4,5,3,4],
         "target":[1,1,1,0,1,0,1,1,1,1]
     })
+
     data["expense_ratio"]=data["expenses"]/data["income"]
     monthly_repayment=data["loan_amount"]/data["duration"]
     data["repayment_ratio"]=monthly_repayment/data["income"]
+
     X=data[["income","expenses","loans","expense_ratio","repayment_ratio"]]
     y=data["target"]
+
     model=RandomForestClassifier(n_estimators=120, random_state=42)
     model.fit(X,y)
+
     return model
 
 model=train_model()
@@ -78,29 +88,53 @@ income=0
 expenses=0
 
 # --------------------------------
+# ALTERNATIVE DATA (NEW FEATURE)
+# --------------------------------
+st.subheader("Alternative Business Data")
+
+daily_sales=st.number_input("Average Daily Sales",min_value=0,value=5000)
+customers=st.number_input("Customers per Day",min_value=0,value=20)
+shop_rent=st.number_input("Monthly Shop Rent",min_value=0,value=10000)
+
+# --------------------------------
 # INPUT SECTION
 # --------------------------------
 if user_type=="Banked (With Statement)":
+
     method=st.radio("Input Method",["Upload Statement","Manual Entry"])
+
     if method=="Upload Statement":
+
         uploaded_file=st.file_uploader("Upload Bank Statement",type=["pdf","png","jpg","jpeg"])
+
         if uploaded_file:
+
             with st.spinner("Analyzing statement..."):
+
                 if uploaded_file.type=="application/pdf":
+
                     with pdfplumber.open(uploaded_file) as pdf:
                         text=" ".join([p.extract_text() for p in pdf.pages if p.extract_text()])
+
                     income,expenses=extract_finances_from_text(text)
+
                 else:
                     st.info("Prototype image analysis used")
                     income=55000
                     expenses=22000
+
                 st.success("Statement analyzed")
+
                 st.write("Detected Income:", format_currency(income))
                 st.write("Detected Expenses:", format_currency(expenses))
+
     else:
+
         income=st.number_input("Monthly Income", min_value=10000, max_value=1000000, step=1000, value=25000)
         expenses=st.number_input("Monthly Expenses", min_value=0, step=1000, value=12000)
+
 else:
+
     income=st.number_input("Business Monthly Income", min_value=10000, max_value=1000000, step=1000, value=25000)
     expenses=st.number_input("Business Monthly Expenses", min_value=0, step=1000, value=12000)
 
@@ -116,82 +150,107 @@ if st.button("Analyze with Micore AI"):
     monthly_cashflow=income-expenses
     monthly_repayment=loan_amount/duration
 
-    # ---------------------------
-    # Financial Metrics Cards
-    # ---------------------------
-    with st.container():
-        col1,col2,col3=st.columns(3)
-        col1.metric("Monthly Income",f"₦{format_currency(income)}")
-        col2.metric("Monthly Expenses",f"₦{format_currency(expenses)}")
-        col3.metric("Monthly Loan Repayment",f"₦{format_currency(monthly_repayment)}")
+    col1,col2,col3=st.columns(3)
+    col1.metric("Monthly Income",f"₦{format_currency(income)}")
+    col2.metric("Monthly Expenses",f"₦{format_currency(expenses)}")
+    col3.metric("Monthly Loan Repayment",f"₦{format_currency(monthly_repayment)}")
 
-    # Cashflow pre-check
+    # FRAUD DETECTION
+    if income>5000000:
+        st.warning("⚠ Suspicious income detected")
+
+    if loan_amount>income*10:
+        st.warning("⚠ Requested loan far exceeds income")
+
     if monthly_cashflow < monthly_repayment*0.95:
+
         st.error("NOT ELIGIBLE ❌")
         st.warning("Loan repayment exceeds safe cashflow")
+
     else:
+
         expense_ratio=expenses/income
         repayment_ratio=monthly_repayment/income
 
         input_data=pd.DataFrame([[income,expenses,loans,expense_ratio,repayment_ratio]],
                                 columns=["income","expenses","loans","expense_ratio","repayment_ratio"])
+
         prediction=model.predict(input_data)[0]
         score=model.predict_proba(input_data)[0][1]*100
 
-        # ---------------------------
-        # Credit Result with Balloons
-        # ---------------------------
-        with st.container():
-            st.subheader("Credit Result")
-            if prediction==1:
-                st.success("ELIGIBLE FOR CREDIT 🎉")
-                st.balloons()
-            else:
-                st.error("NOT ELIGIBLE ❌")
-            st.metric("Micore AI Risk Score", f"{score:.1f}/100")
+        st.subheader("Credit Result")
 
-        # ---------------------------
-        # Credit Score Gauge
-        # ---------------------------
-        with st.container():
-            st.subheader("Credit Score Gauge")
-            gauge=go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=score,
-                title={"text":"Micore AI Credit Score"},
-                gauge={
-                    "axis":{"range":[0,100]},
-                    "steps":[
-                        {"range":[0,40],"color":"red"},
-                        {"range":[40,70],"color":"orange"},
-                        {"range":[70,100],"color":"lightgreen"}
-                    ]
-                }
-            ))
-            st.plotly_chart(gauge,use_container_width=True)
+        if prediction==1:
+            st.success("ELIGIBLE FOR CREDIT 🎉")
+            st.balloons()
+        else:
+            st.error("NOT ELIGIBLE ❌")
 
-        # ---------------------------
-        # Decision Insights
-        # ---------------------------
-        with st.container():
-            st.subheader("Micore AI Decision Insights")
-            st.write(f"Expense Ratio: {expense_ratio:.2f}")
-            st.write(f"Repayment Ratio: {repayment_ratio:.2f}")
-            if loans==0:
-                st.write("Existing Loans: Low Risk")
-            elif loans==1:
-                st.write("Existing Loans: Moderate Risk")
-            else:
-                st.write("Existing Loans: Higher Risk")
+        st.metric("Micore AI Risk Score", f"{score:.1f}/100")
 
-        # ---------------------------
-        # Financial Overview Chart
-        # ---------------------------
-        with st.container():
-            fig,ax=plt.subplots()
-            ax.bar(["Income","Expenses"],[income,expenses], color=['#28a745','#dc3545'])
-            ax.set_title("Financial Overview")
-            st.pyplot(fig)
+        # SMART LOAN RECOMMENDATION
+        recommended_loan=income*2
+        if loan_amount>recommended_loan:
+            st.info(f"Recommended safer loan amount: ₦{format_currency(recommended_loan)}")
+
+        # BUSINESS GROWTH PREDICTION
+        future_income=income*1.2
+        st.write(f"📈 If this financial pattern continues, business income may reach ₦{format_currency(future_income)} in 6 months.")
+
+        # CREDIT SCORE GAUGE
+        gauge=go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=score,
+            title={"text":"Micore AI Credit Score"},
+            gauge={
+                "axis":{"range":[0,100]},
+                "steps":[
+                    {"range":[0,40],"color":"red"},
+                    {"range":[40,70],"color":"orange"},
+                    {"range":[70,100],"color":"lightgreen"}
+                ]
+            }
+        ))
+        st.plotly_chart(gauge,use_container_width=True)
+
+        # SAVE HISTORY
+        st.session_state.history.append({
+            "Income":income,
+            "Loan":loan_amount,
+            "Score":score,
+            "Decision":"Approved" if prediction==1 else "Rejected"
+        })
+
+        # FINANCIAL CHART
+        fig,ax=plt.subplots()
+        ax.bar(["Income","Expenses"],[income,expenses])
+        ax.set_title("Financial Overview")
+        st.pyplot(fig)
+
+# --------------------------------
+# FINTECH DASHBOARD
+# --------------------------------
+if len(st.session_state.history)>0:
+
+    st.subheader("Micore Fintech Analytics")
+
+    df=pd.DataFrame(st.session_state.history)
+
+    total=len(df)
+    approved=len(df[df["Decision"]=="Approved"])
+    rejected=len(df[df["Decision"]=="Rejected"])
+    avg_score=df["Score"].mean()
+
+    col1,col2,col3,col4=st.columns(4)
+
+    col1.metric("Total Applicants",total)
+    col2.metric("Approved",approved)
+    col3.metric("Rejected",rejected)
+    col4.metric("Average Score",f"{avg_score:.1f}")
+
+    st.dataframe(df)
+
+    st.bar_chart(df["Score"])
 
 # --------------------------------
 # FOOTER
