@@ -139,7 +139,7 @@ if st.button("Analyze with Micore AI"):
     col3.metric("Monthly Loan Repayment",f"₦{format_currency(monthly_repayment)}")
 
     # Fraud Detection
-    if income>5000000:
+    if income>1000000:
         st.warning("⚠ Suspicious income detected")
     if loan_amount>income*10:
         st.warning("⚠ Requested loan far exceeds income")
