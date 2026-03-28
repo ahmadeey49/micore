@@ -142,7 +142,7 @@ if st.button("Analyze with Micore AI"):
     if income>1000000:
         st.warning("⚠ Suspicious income detected")
     if loan_amount>income*10:
-        st.warning("⚠ Requested loan far exceeds income")
+        st.warning("⚠ Suspicious Loan Request: Requested loan Amount unusually high compared to income")
     if monthly_cashflow < monthly_repayment*0.95:
         st.error("NOT ELIGIBLE ❌")
         st.warning("Loan repayment exceeds safe cashflow")
