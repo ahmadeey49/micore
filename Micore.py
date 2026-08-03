@@ -13,7 +13,7 @@ import datetime
 # -------------------------
 # App Config
 # -------------------------
-st.set_page_config(page_title="Micore AI Credit Scoring",
+st.set_page_config(page_title="Micore AI-Loan default risk predictor",
                    layout="centered",
                    page_icon="📊")
 
@@ -31,7 +31,7 @@ height:3em;
 """, unsafe_allow_html=True)
 
 st.title("📊 Micore AI")
-st.write("### AI-Powered Micro Credit Scoring for Small Businesses")
+st.write("### AI-Powered Loan Default Risk Predictor and Credit Assessment")
 
 # -------------------------
 # Session Storage
@@ -155,13 +155,13 @@ if st.button("Analyze with Micore AI"):
         score=model.predict_proba(input_data)[0][1]*100
 
         # Credit Result
-        st.subheader("Credit Result")
+        st.subheader("Default Risk Assessment Result")
         if prediction==1:
-            st.success("ELIGIBLE FOR CREDIT 🎉")
+            st.success("LOW DEFAULT RISK-APPROVED 🎉")
             st.balloons()
         else:
-            st.error("NOT ELIGIBLE ❌")
-        st.metric("Micore AI Risk Score", f"{score:.1f}/100")
+            st.error("HIGH DEFAULT RISK-REJECTED ❌")
+        st.metric("Repayment Safety Score", f"{score:.1f}/100")
 
         # Smart Loan Recommendation
         recommended_loan=income*2
@@ -176,7 +176,7 @@ if st.button("Analyze with Micore AI"):
         gauge=go.Figure(go.Indicator(
             mode="gauge+number",
             value=score,
-            title={"text":"Micore AI Credit Score"},
+            title={"text":"Repayment Safety Index"},
             gauge={
                 "axis":{"range":[0,100]},
                 "steps":[
@@ -226,7 +226,7 @@ if len(st.session_state.history)>0:
 st.sidebar.markdown("""
 ---
 Built by: *Abba Saminu*  
-Project: *3MTT NextGen Knowledge Showcase*  
+Project: *3MTT NextGen Capstone Project*  
 Pillar: *Financial Inclusion*  
 Location: *Wudil, Kano State*  
 Date: *March 2026*
